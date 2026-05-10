@@ -1,9 +1,218 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Testing</title>
-  </head>
-  <body>
-    <h1>testing111111</h1>
-  </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSW24 Word Quiz</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e67e22;
+            --tile: #f39c12;
+            --success: #27ae60;
+            --error: #e74c3c;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: #ecf0f1; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        
+        h1 { color: var(--primary); text-align: center; margin-bottom: 20px; }
+        .hidden { display: none; }
+
+        /* Setup Screen */
+        .setup-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+
+        /* Game Screen */
+        .tile-container { display: flex; gap: 10px; justify-content: center; margin: 20px 0; min-height: 60px; }
+        .tile { 
+            width: 50px; height: 50px; background: var(--tile); color: white; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 1.5rem; border-radius: 5px; cursor: pointer;
+            box-shadow: 0 4px 0 #d35400; transition: transform 0.1s;
+        }
+        .tile:active { transform: translateY(4px); box-shadow: none; }
+        .tile.used { opacity: 0.3; pointer-events: none; }
+
+        .answer-box { 
+            border-bottom: 3px solid var(--primary); height: 50px; 
+            font-size: 2rem; text-align: center; letter-spacing: 5px; margin-bottom: 20px;
+            text-transform: uppercase; font-weight: bold;
+        }
+
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+        button { 
+            flex: 1; padding: 12px; border: none; border-radius: 5px; 
+            cursor: pointer; font-weight: bold; color: white; transition: 0.3s;
+        }
+        .btn-submit { background: var(--success); }
+        .btn-invalid { background: var(--error); }
+        .btn-clear { background: var(--primary); }
+        .btn-start { background: var(--accent); width: 100%; margin-top: 10px; }
+
+        /* Review Screen */
+        .review-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .correct { color: var(--success); }
+        .wrong { color: var(--error); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CSW24 Quiz</h1>
+
+    <!-- Setup Screen -->
+    <div id="setup-screen">
+        <div class="setup-group">
+            <label>Word Length</label>
+            <select id="word-length">
+                <option value="3">3 Letters</option>
+                <option value="4">4 Letters</option>
+                <option value="5">5 Letters</option>
+                <option value="random">Mixed</option>
+            </select>
+        </div>
+        <div class="setup-group">
+            <label>Number of Questions</label>
+            <input type="number" id="quiz-count" value="5" min="1" max="20">
+        </div>
+        <button class="btn-start" onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden">
+        <p style="text-align: center;">Question <span id="current-idx">1</span> of <span id="total-idx">5</span></p>
+        <div class="tile-container" id="tile-rack"></div>
+        <div class="answer-box" id="answer-display"></div>
+        
+        <div class="controls">
+            <button class="btn-clear" onclick="clearAnswer()">Clear</button>
+            <button class="btn-submit" onclick="submitAnswer(true)">Valid Word</button>
+            <button class="btn-invalid" onclick="submitAnswer(false)">Invalid Word</button>
+        </div>
+    </div>
+
+    <!-- Review Screen -->
+    <div id="review-screen" class="hidden">
+        <h2>Quiz Results</h2>
+        <div id="review-list"></div>
+        <button class="btn-start" onclick="location.reload()">Restart</button>
+    </div>
+</div>
+
+<script>
+    // Sample CSW24 Data (Expand this list with real CSW24 words)
+    const CSW24_WORDS = {
+        3: ["AAH", "ABB", "ABO", "ABS", "ABY", "ACE", "ACT", "ADD", "ADO", "ADS"],
+        4: ["ABBA", "ABBE", "ABBS", "ABED", "ABET", "ABID", "ABLE", "ABLY", "ABOS", "ABRI"],
+        5: ["AAHED", "AALII", "AARGH", "ABACA", "ABACI", "ABACK", "ABAFT", "ABAKA", "ABAMP", "ABAND"]
+    };
+
+    let quizData = [];
+    let currentQuestion = 0;
+    let userAnswers = [];
+    let currentInput = "";
+
+    function startQuiz() {
+        const length = document.getElementById('word-length').value;
+        const count = parseInt(document.getElementById('quiz-count').value);
+        
+        // Generate Questions
+        for (let i = 0; i < count; i++) {
+            const l = length === 'random' ? (Math.floor(Math.random() * 3) + 3) : parseInt(length);
+            const isReal = Math.random() > 0.3; // 70% chance of being a real word
+            let word, tiles;
+
+            if (isReal) {
+                const list = CSW24_WORDS[l];
+                word = list[Math.floor(Math.random() * list.length)];
+                tiles = word.split('').sort(() => Math.random() - 0.5);
+            } else {
+                // Create a "fake" word by shuffling a real one into gibberish
+                const real = CSW24_WORDS[l][Math.floor(Math.random() * CSW24_WORDS[l].length)];
+                tiles = real.split('').sort(() => Math.random() - 0.5);
+                word = "INVALID"; 
+            }
+            quizData.push({ tiles, correctWord: word, isReal });
+        }
+
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        const q = quizData[currentQuestion];
+        document.getElementById('current-idx').innerText = currentQuestion + 1;
+        document.getElementById('total-idx').innerText = quizData.length;
+        
+        const rack = document.getElementById('tile-rack');
+        rack.innerHTML = '';
+        currentInput = "";
+        updateDisplay();
+
+        q.tiles.forEach((letter, idx) => {
+            const div = document.createElement('div');
+            div.className = 'tile';
+            div.innerText = letter;
+            div.onclick = () => selectTile(letter, div);
+            rack.appendChild(div);
+        });
+    }
+
+    function selectTile(letter, element) {
+        currentInput += letter;
+        element.classList.add('used');
+        updateDisplay();
+    }
+
+    function clearAnswer() {
+        currentInput = "";
+        updateDisplay();
+        document.querySelectorAll('.tile').forEach(t => t.classList.remove('used'));
+    }
+
+    function updateDisplay() {
+        document.getElementById('answer-display').innerText = currentInput;
+    }
+
+    function submitAnswer(userClaimsValid) {
+        const q = quizData[currentQuestion];
+        const isCorrect = (userClaimsValid === q.isReal) && (!userClaimsValid || (currentInput === q.correctWord || CSW24_WORDS[q.tiles.length].includes(currentInput)));
+        
+        userAnswers.push({
+            tiles: q.tiles.join(''),
+            userWord: userClaimsValid ? currentInput : "Marked Invalid",
+            correctWord: q.isReal ? q.correctWord : "Invalid Combination",
+            status: isCorrect
+        });
+
+        currentQuestion++;
+        if (currentQuestion < quizData.length) {
+            loadQuestion();
+        } else {
+            showReview();
+        }
+    }
+
+    function showReview() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('review-screen').classList.remove('hidden');
+        
+        const list = document.getElementById('review-list');
+        userAnswers.forEach((ans, i) => {
+            const div = document.createElement('div');
+            div.className = `review-item ${ans.status ? 'correct' : 'wrong'}`;
+            div.innerHTML = `
+                <strong>Q${i+1}: Tiles [${ans.tiles}]</strong><br>
+                Your Answer: ${ans.userWord} <br>
+                Solution: ${ans.correctWord} ${ans.status ? '✓' : '✗'}
+            `;
+            list.appendChild(div);
+        });
+    }
+</script>
+
+</body>
 </html>

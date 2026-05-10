@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSW24 Expert Quiz</title>
+    <title>CSW24 Expert Quiz Pro</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -15,7 +15,7 @@
         }
 
         body { font-family: 'Segoe UI', sans-serif; background: #dfe6e9; display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 700px; }
         
         h1 { color: var(--primary); text-align: center; margin-bottom: 20px; }
         .hidden { display: none; }
@@ -24,18 +24,18 @@
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
 
-        .tile-container { display: flex; gap: 10px; justify-content: center; margin: 20px 0; min-height: 60px; }
+        .tile-container { display: flex; gap: 8px; justify-content: center; margin: 20px 0; min-height: 60px; flex-wrap: wrap; }
         .tile { 
-            width: 50px; height: 50px; background: var(--tile); color: white; 
+            width: 45px; height: 45px; background: var(--tile); color: white; 
             display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; font-size: 1.5rem; border-radius: 5px; cursor: pointer;
+            font-weight: bold; font-size: 1.2rem; border-radius: 5px; cursor: pointer;
             box-shadow: 0 4px 0 #d35400; transition: transform 0.1s;
         }
-        .tile.used { opacity: 0.3; pointer-events: none; }
+        .tile.used { opacity: 0.3; pointer-events: none; transform: translateY(2px); box-shadow: 0 2px 0 #d35400; }
 
         .answer-box { 
             border-bottom: 3px solid var(--dark); height: 50px; 
-            font-size: 2rem; text-align: center; letter-spacing: 4px; margin-bottom: 20px;
+            font-size: 1.8rem; text-align: center; letter-spacing: 4px; margin-bottom: 20px;
             text-transform: uppercase; font-weight: bold; color: var(--dark);
         }
 
@@ -45,7 +45,7 @@
         }
         .found-tag { 
             display: inline-block; background: var(--dark); color: white; 
-            padding: 5px 12px; border-radius: 20px; margin: 4px; font-size: 0.9rem;
+            padding: 5px 12px; border-radius: 20px; margin: 4px; font-size: 0.85rem;
         }
 
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -67,7 +67,7 @@
 <body>
 
 <div class="container">
-    <h1>CSW24 Expert</h1>
+    <h1>CSW24 Expert Quiz</h1>
 
     <div id="setup-screen">
         <div class="setup-group">
@@ -75,10 +75,13 @@
             <select id="word-length">
                 <option value="3">3 Letters</option>
                 <option value="4">4 Letters</option>
+                <option value="5">5 Letters</option>
+                <option value="6">6 Letters</option>
+                <option value="7">7 Letters</option>
             </select>
         </div>
         <div class="setup-group">
-            <label>Questions</label>
+            <label>Number of Questions</label>
             <input type="number" id="quiz-count" value="5" min="1">
         </div>
         <button class="btn-start" onclick="startQuiz()">Begin Quiz</button>
@@ -91,28 +94,39 @@
         <div class="answer-box" id="answer-display"></div>
         
         <div class="found-words">
-            <small>Submitted for this round:</small><br>
+            <small>Words you have added:</small><br>
             <div id="found-list"></div>
         </div>
         
         <div class="controls">
             <button class="btn-clear" onclick="clearAnswer()">Clear Tiles</button>
             <button class="btn-add" onclick="addWord()">Add Word</button>
-            <button class="btn-invalid" onclick="markInvalid()">No Words Exist</button>
-            <button class="btn-final" onclick="finalizeQuestion()">Finalize Answer</button>
+            <button class="btn-invalid" onclick="markInvalid()">No Words Possible</button>
+            <button class="btn-final" onclick="finalizeQuestion()">Finalize & Next</button>
         </div>
     </div>
 
     <div id="review-screen" class="hidden">
         <h2>Review Results</h2>
         <div id="review-list"></div>
-        <button class="btn-start" onclick="location.reload()">New Quiz</button>
+        <button class="btn-start" onclick="location.reload()">Start New Session</button>
     </div>
 </div>
 
 <script>
-    // Sample Word Bank - Add more CSW24 words here
-    const CSW24_FULL = ["ACT", "CAT", "ATE", "EAT", "TEA", "ETA", "DOG", "GOD", "EARS", "ERAS", "SEAR", "OPTS", "POST", "STOP", "POTS", "TOPS", "AREAS", "ABED", "BADE", "BEAD"];
+    // Expanded Sample Bank. Note: For a real CSW24 study, you would import thousands of words.
+    const CSW24_DATA = [
+        // 3s
+        "ACT", "CAT", "ATE", "EAT", "TEA", "ETA", "DOG", "GOD", "AIN", "ANI",
+        // 4s
+        "EARS", "ERAS", "SEAR", "OPTS", "POST", "STOP", "POTS", "TOPS", "ABED", "BADE", "BEAD", "AMEN", "MANE", "MEAN", "NAME",
+        // 5s
+        "AREAS", "RAISE", "ARISE", "SERAI", "CLEAT", "LEAST", "STALE", "SLATE", "STEAL", "TALES",
+        // 6s
+        "RETAIN", "REINA", "RETINA", "ENTIRE", "SALTER", "SLATER", "STALER", "TALERS", "CASTER", "RECAST",
+        // 7s
+        "PAINTER", "PERTAIN", "REPAINT", "RETAIN", "EASTERN", "NEAREST", "RETEINS", "STERNIA"
+    ];
 
     let quizPool = [];
     let currentQuestion = 0;
@@ -122,21 +136,28 @@
 
     function startQuiz() {
         const length = parseInt(document.getElementById('word-length').value);
-        const count = parseInt(document.getElementById('quiz-count').value);
+        let count = parseInt(document.getElementById('quiz-count').value);
         
-        // Group by anagrams
         const groups = {};
-        CSW24_FULL.filter(w => w.length === length).forEach(word => {
-            const key = word.split('').sort().join('');
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(word);
+        CSW24_DATA.forEach(word => {
+            if(word.length === length) {
+                const key = word.split('').sort().join('');
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(word);
+            }
         });
 
-        // Convert to array and shuffle to prevent repeats
         let keys = Object.keys(groups).sort(() => Math.random() - 0.5);
         
+        // If the pool is smaller than requested, we take what we have
+        const actualCount = Math.min(count, keys.length);
+        if (actualCount === 0) {
+            alert("No words of that length found in the current word bank! Please try another length.");
+            return;
+        }
+
         quizPool = [];
-        for (let i = 0; i < Math.min(count, keys.length); i++) {
+        for (let i = 0; i < actualCount; i++) {
             quizPool.push({
                 tiles: keys[i].split('').sort(() => Math.random() - 0.5),
                 validSolutions: groups[keys[i]]
@@ -161,14 +182,17 @@
     function renderTiles() {
         const rack = document.getElementById('tile-rack');
         rack.innerHTML = '';
-        quizPool[currentQuestion].tiles.forEach(letter => {
+        quizPool[currentQuestion].tiles.forEach((letter, idx) => {
             const div = document.createElement('div');
             div.className = 'tile';
             div.innerText = letter;
-            div.onclick = () => {
-                currentInput += letter;
-                div.classList.add('used');
-                document.getElementById('answer-display').innerText = currentInput;
+            div.dataset.index = idx;
+            div.onclick = function() {
+                if(!this.classList.contains('used')) {
+                    currentInput += letter;
+                    this.classList.add('used');
+                    document.getElementById('answer-display').innerText = currentInput;
+                }
             };
             rack.appendChild(div);
         });
@@ -182,7 +206,6 @@
 
     function addWord() {
         if (currentInput.length === 0) return;
-        
         if (!currentSessionWords.includes(currentInput)) {
             currentSessionWords.push(currentInput);
             const span = document.createElement('span');
@@ -194,21 +217,19 @@
     }
 
     function markInvalid() {
-        currentSessionWords = []; // Represents user claiming no words exist
+        currentSessionWords = []; 
         finalizeQuestion();
     }
 
     function finalizeQuestion() {
         const q = quizPool[currentQuestion];
-        
-        // Check if user found EXACTLY the same words as the solution
         const userSorted = [...currentSessionWords].sort();
         const solutionSorted = [...q.validSolutions].sort();
         const isCorrect = JSON.stringify(userSorted) === JSON.stringify(solutionSorted);
 
         userResults.push({
             tiles: q.tiles.join(''),
-            userWords: currentSessionWords,
+            userWords: [...currentSessionWords],
             allSolutions: q.validSolutions,
             success: isCorrect
         });
@@ -230,9 +251,9 @@
             const div = document.createElement('div');
             div.className = `review-item ${res.success ? 'correct' : 'wrong'}`;
             div.innerHTML = `
-                <strong>Q${i+1}: Tiles [${res.tiles}]</strong><br>
-                Your entry: ${res.userWords.join(', ') || 'None'}<br>
-                <span style="color: #2c3e50">CSW24 Solutions: <b>${res.allSolutions.join(', ')}</b></span>
+                <strong>Question ${i+1}: Tiles [${res.tiles}]</strong><br>
+                Your entries: ${res.userWords.join(', ') || 'None'}<br>
+                Correct CSW24 Solutions: <b>${res.allSolutions.join(', ')}</b>
             `;
             list.appendChild(div);
         });
